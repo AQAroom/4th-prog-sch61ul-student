@@ -136,7 +136,7 @@ jobs:
         MUL_RESULTS: "${{steps.mul_test.outputs.result}}"
         DIV_RESULTS: "${{steps.div_test.outputs.result}}"
         POW_RESULTS: "${{steps.pow_test.outputs.result}}"
-        DIV_ZERO_SCORE="${{ steps.div_zero_test.outputs.score }}"
+        DIV_ZERO_SCORE: "${{ steps.div_zero_test.outputs.score }}"
         UNK_RESULTS: "${{steps.unk_test.outputs.result}}"
       with:
         runners: add,sub,mul,div,pow,unk
