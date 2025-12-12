@@ -8,7 +8,10 @@ elif z == "-":
 elif z == "*":
     print(a * b)
 elif z == "/":
-    print(a / b)
+    if b == 0:
+        print("error")
+    else:
+        print(a / b)
 elif z == "^":
     print(a ** b)
 else:
