@@ -133,6 +133,14 @@ jobs:
     - name: Autograding Reporter
       id: reporter
       uses: classroom-resources/autograding-grading-reporter@v1
+      env:
+        ADD_TEST_RESULTS: "${{steps.add_test.outputs.result}}"
+        SUB_TEST_RESULTS: "${{steps.sub_test.outputs.result}}"
+        MUL_TEST_RESULTS: "${{steps.mul_test.outputs.result}}"
+        DIV_TEST_RESULTS: "${{steps.div_test.outputs.result}}"
+        POW_TEST_RESULTS: "${{steps.pow_test.outputs.result}}"
+        DIV_ZERO_TEST_RESULTS: "${{ steps.div_zero_test.outputs.result }}"
+        UNK_TEST_RESULTS: "${{steps.unk_test.outputs.result}}"
       with:
         runners: add_test,sub_test,mul_test,div_test,pow_test,div_zero_test,unk_test
     
