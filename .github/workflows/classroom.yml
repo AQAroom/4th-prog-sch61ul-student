@@ -9,6 +9,7 @@ permissions:
 jobs:
   # JOB 1
   run-autograding-tests:
+    name: Оценка заданий
     runs-on: ubuntu-latest
     if: github.actor != 'github-classroom[bot]'
     steps:
@@ -131,6 +132,19 @@ jobs:
       uses: classroom-resources/autograding-grading-reporter@v1
       with:
         runners: add_test,sub_test,mul_test,div_test,pow_test,div_zero_test,unk_test
+
+    # Дополнительный шаг для отладки (можно удалить после проверки)
+    - name: Debug Results
+      run: |
+        echo "Сложение: ${{ steps.add_test.outputs.result }} / ${{ steps.add_test.outputs.score }}"
+        echo "Вычитание: ${{ steps.sub_test.outputs.result }} / ${{ steps.sub_test.outputs.score }}"
+        echo "Умножение: ${{ steps.mul_test.outputs.result }} / ${{ steps.mul_test.outputs.score }}"
+        echo "Деление: ${{ steps.div_test.outputs.result }} / ${{ steps.div_test.outputs.score }}"
+        echo "Степень: ${{ steps.pow_test.outputs.result }} / ${{ steps.pow_test.outputs.score }}"
+        echo "Деление на ноль: ${{ steps.div_zero_test.outputs.result }} / ${{ steps.div_zero_test.outputs.score }}"
+        echo "Неизвестная операция: ${{ steps.unk_test.outputs.result }} / ${{ steps.unk_test.outputs.score }}"
+        echo "Итоговый счет: ${{ steps.reporter.outputs.total-score }} из ${{ steps.reporter.outputs.max-score }}"
+        
 
   # JOB: ЛИНТЕРЫ (информация для студента, не влияет на оценку)
   run-linters:
