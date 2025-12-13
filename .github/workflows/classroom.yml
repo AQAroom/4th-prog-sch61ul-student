@@ -9,7 +9,6 @@ permissions:
 jobs:
   # JOB 1
   run-autograding-tests:
-    name: Оценка заданий
     runs-on: ubuntu-latest
     if: github.actor != 'github-classroom[bot]'
     steps:
@@ -127,18 +126,6 @@ jobs:
         timeout: 5
         max-score: 10
     
-    # Дополнительный шаг для отладки (можно удалить после проверки)
-    - name: Debug Results
-      run: |
-        echo "Сложение: ${{ steps.add_test.outputs.result }} / ${{ steps.add_test.outputs.score }}"
-        echo "Вычитание: ${{ steps.sub_test.outputs.result }} / ${{ steps.sub_test.outputs.score }}"
-        echo "Умножение: ${{ steps.mul_test.outputs.result }} / ${{ steps.mul_test.outputs.score }}"
-        echo "Деление: ${{ steps.div_test.outputs.result }} / ${{ steps.div_test.outputs.score }}"
-        echo "Степень: ${{ steps.pow_test.outputs.result }} / ${{ steps.pow_test.outputs.score }}"
-        echo "Деление на ноль: ${{ steps.div_zero_test.outputs.result }} / ${{ steps.div_zero_test.outputs.score }}"
-        echo "Неизвестная операция: ${{ steps.unk_test.outputs.result }} / ${{ steps.unk_test.outputs.score }}"
-        echo "Итоговый счет: ${{ steps.reporter.outputs.total-score }} из ${{ steps.reporter.outputs.max-score }}"
-        
     - name: Autograding Reporter
       id: reporter
       uses: classroom-resources/autograding-grading-reporter@v1
@@ -148,10 +135,131 @@ jobs:
         MUL_TEST_RESULTS: "${{steps.mul_test.outputs.result}}"
         DIV_TEST_RESULTS: "${{steps.div_test.outputs.result}}"
         POW_TEST_RESULTS: "${{steps.pow_test.outputs.result}}"
-        DIV_ZERO_TEST_RESULTS: "${{ steps.div_zero_test.outputs.result }}"
+        DIV_TEST_ZERO_RESULTS: "${{ steps.div_zero_test.outputs.result }}"
         UNK_TEST_RESULTS: "${{steps.unk_test.outputs.result}}"
       with:
         runners: add_test,sub_test,mul_test,div_test,pow_test,div_zero_test,unk_test
+
+    # Получение результатов
+    - name: Extract Scores
+      id: extract_scores
+      run: |
+        # Декодируем результаты из base64 и извлекаем score
+        decode_and_get_score() {
+          local encoded_result="$1"
+          echo "$encoded_result" | base64 -d | python3 -c "import sys, json; data=json.load(sys.stdin); print(data['tests'][0]['score'])"
+        }
+        
+        # Извлекаем баллы из каждого теста
+        ADD_SCORE=$(decode_and_get_score '${{ steps.add_test.outputs.result }}')
+        SUB_SCORE=$(decode_and_get_score '${{ steps.sub_test.outputs.result }}')
+        MUL_SCORE=$(decode_and_get_score '${{ steps.mul_test.outputs.result }}')
+        DIV_SCORE=$(decode_and_get_score '${{ steps.div_test.outputs.result }}')
+        POW_SCORE=$(decode_and_get_score '${{ steps.pow_test.outputs.result }}')
+        DIV_ZERO_SCORE=$(decode_and_get_score '${{ steps.div_zero_test.outputs.result }}')
+        UNKNOWN_SCORE=$(decode_and_get_score '${{ steps.unk_test.outputs.result }}')
+        
+        # Сохраняем в outputs
+        echo "add_score=$ADD_SCORE" >> $GITHUB_OUTPUT
+        echo "sub_score=$SUB_SCORE" >> $GITHUB_OUTPUT
+        echo "mul_score=$MUL_SCORE" >> $GITHUB_OUTPUT
+        echo "div_score=$DIV_SCORE" >> $GITHUB_OUTPUT
+        echo "pow_score=$POW_SCORE" >> $GITHUB_OUTPUT
+        echo "div_zero_score=$DIV_ZERO_SCORE" >> $GITHUB_OUTPUT
+        echo "unk_score=$UNKNOWN_SCORE" >> $GITHUB_OUTPUT
+        
+        # Также сохраняем в переменные окружения для удобства
+        echo "ADD_SCORE=$ADD_SCORE" >> $GITHUB_ENV
+        echo "SUB_SCORE=$SUB_SCORE" >> $GITHUB_ENV
+        echo "MUL_SCORE=$MUL_SCORE" >> $GITHUB_ENV
+        echo "DIV_SCORE=$DIV_SCORE" >> $GITHUB_ENV
+        echo "POW_SCORE=$POW_SCORE" >> $GITHUB_ENV
+        echo "DIV_ZERO_SCORE=$DIV_ZERO_SCORE" >> $GITHUB_ENV
+        echo "UNKNOWN_SCORE=$UNKNOWN_SCORE" >> $GITHUB_ENV
+    
+    # Генерация отчета с правильными баллами
+    - name: Generate Test Report
+      run: |
+        # Используем переменные из предыдущего шага
+        ADD_SCORE="${ADD_SCORE:-0}"
+        SUB_SCORE="${SUB_SCORE:-0}"
+        MUL_SCORE="${MUL_SCORE:-0}"
+        DIV_SCORE="${DIV_SCORE:-0}"
+        POW_SCORE="${POW_SCORE:-0}"
+        DIV_ZERO_SCORE="${DIV_ZERO_SCORE:-0}"
+        UNKNOWN_SCORE="${UNKNOWN_SCORE:-0}"
+        
+        # Вычисляем итоги
+        TOTAL_POINTS=$((ADD_SCORE + SUB_SCORE + MUL_SCORE + DIV_SCORE + POW_SCORE + DIV_ZERO_SCORE + UNKNOWN_SCORE))
+        MAX_POINTS=100
+        
+        # Определяем статусы
+        get_status() {
+          local score="$1"
+          if [ "$score" -gt 0 ]; then
+            echo "✅"
+          else
+            echo "❌"
+          fi
+        }
+        
+        ADD_STATUS=$(get_status "$ADD_SCORE")
+        SUB_STATUS=$(get_status "$SUB_SCORE")
+        MUL_STATUS=$(get_status "$MUL_SCORE")
+        DIV_STATUS=$(get_status "$DIV_SCORE")
+        POW_STATUS=$(get_status "$POW_SCORE")
+        DIV_ZERO_STATUS=$(get_status "$DIV_ZERO_SCORE")
+        UNKNOWN_STATUS=$(get_status "$UNKNOWN_SCORE")
+        
+        # Генерация отчета
+        echo "## 📊 Результаты тестирования" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🧪 Детализация тестов" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Тест | Баллы | Максимум | Статус |" >> $GITHUB_STEP_SUMMARY
+        echo "|------|-------|----------|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| **Сложение** | $ADD_SCORE | 15 | $ADD_STATUS |" >> $GITHUB_STEP_SUMMARY
+        echo "| **Вычитание** | $SUB_SCORE | 15 | $SUB_STATUS |" >> $GITHUB_STEP_SUMMARY
+        echo "| **Умножение** | $MUL_SCORE | 15 | $MUL_STATUS |" >> $GITHUB_STEP_SUMMARY
+        echo "| **Деление** | $DIV_SCORE | 15 | $DIV_STATUS |" >> $GITHUB_STEP_SUMMARY
+        echo "| **Степень** | $POW_SCORE | 15 | $POW_STATUS |" >> $GITHUB_STEP_SUMMARY
+        echo "| **Деление на ноль** | $DIV_ZERO_SCORE | 15 | $DIV_ZERO_STATUS |" >> $GITHUB_STEP_SUMMARY
+        echo "| **Неизвестная операция** | $UNKNOWN_SCORE | 10 | $UNKNOWN_STATUS |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Расчет процента
+        if [ "$MAX_POINTS" -gt 0 ]; then
+          PERCENTAGE=$((TOTAL_POINTS * 100 / MAX_POINTS))
+        else
+          PERCENTAGE=0
+        fi
+        
+        echo "### 🏆 Итоговая статистика" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Всего баллов:** $TOTAL_POINTS / $MAX_POINTS" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Прогресс-бар
+        echo "**Прогресс:**" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "<div style='background: #e1e4e8; border-radius: 4px; height: 20px; width: 100%;'>" >> $GITHUB_STEP_SUMMARY
+        echo "  <div style='background: #2ea44f; border-radius: 4px; height: 100%; width: $PERCENTAGE%;'></div>" >> $GITHUB_STEP_SUMMARY
+        echo "</div>" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Сообщение в зависимости от результата
+        if [ "$TOTAL_POINTS" -eq "$MAX_POINTS" ]; then
+          echo "🎉 **Отличная работа! Все тесты пройдены!**" >> $GITHUB_STEP_SUMMARY
+        elif [ "$PERCENTAGE" -ge 80 ]; then
+          echo "👍 **Хороший результат! Почти все тесты пройдены.**" >> $GITHUB_STEP_SUMMARY
+        elif [ "$PERCENTAGE" -ge 60 ]; then
+          echo "⚠️ **Есть над чем поработать.**" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Нужно серьезно поработать над заданием.**" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "*Автоматическая проверка завершена*" >> $GITHUB_STEP_SUMMARY
 
   # JOB: ЛИНТЕРЫ (информация для студента, не влияет на оценку)
   run-linters:
