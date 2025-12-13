@@ -1,7 +1,7 @@
 name: Autograding Tests
-'on':
+on:
   - push
-  - repository_dispatch
+  - workflow_dispatch
 permissions:
   checks: write
   actions: read
@@ -130,14 +130,14 @@ jobs:
     - name: Autograding Reporter
       id: reporter
       uses: classroom-resources/autograding-grading-reporter@v1
-      env:
-        ADD_RESULTS: "${{steps.add_test.outputs.result}}"
-        SUB_RESULTS: "${{steps.sub_test.outputs.result}}"
-        MUL_RESULTS: "${{steps.mul_test.outputs.result}}"
-        DIV_RESULTS: "${{steps.div_test.outputs.result}}"
-        POW_RESULTS: "${{steps.pow_test.outputs.result}}"
-        DIV_ZERO_RESULTS: "${{ steps.div_zero_test.outputs.result }}"
-        UNK_RESULTS: "${{steps.unk_test.outputs.result}}"
+      # env:
+      #   ADD_RESULTS: "${{steps.add_test.outputs.result}}"
+      #   SUB_RESULTS: "${{steps.sub_test.outputs.result}}"
+      #   MUL_RESULTS: "${{steps.mul_test.outputs.result}}"
+      #   DIV_RESULTS: "${{steps.div_test.outputs.result}}"
+      #   POW_RESULTS: "${{steps.pow_test.outputs.result}}"
+      #   DIV_ZERO_RESULTS: "${{ steps.div_zero_test.outputs.result }}"
+      #   UNK_RESULTS: "${{steps.unk_test.outputs.result}}"
       with:
         runners: |
           add_test
