@@ -125,7 +125,7 @@ jobs:
         timeout: 5
         max-score: 10
     
-    # Правильное получение результатов
+    # Получение результатов
     - name: Extract Scores
       id: extract_scores
       run: |
