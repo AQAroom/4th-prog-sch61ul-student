@@ -13,6 +13,6 @@ elif z == "/":
     else:
         print(a / b)
 elif z == "^":
-    print(a ** b)
+    print(a  ** b)
 else:
     print( "Неизвестная операция" )
